@@ -18,6 +18,8 @@ import java.lang.reflect.Constructor;
  * @since 2021/1/26
  */
 public class DefaultUserResolver implements HandlerMethodArgumentResolver {
+    private long defaultUserId = 1L;
+    private String defaultUserName = "系统";
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return findMethodAnnotation(AuthenticationPrincipal.class, parameter) != null;
@@ -27,8 +29,7 @@ public class DefaultUserResolver implements HandlerMethodArgumentResolver {
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
         Class<?> clazz = parameter.getParameterType();
         Constructor<?> constructor = clazz.getConstructor(long.class, String.class);
-        long defaultUserId = 1L;
-        Object instance = constructor.newInstance(defaultUserId, "系统");
+        Object instance = constructor.newInstance(defaultUserId, defaultUserName);
         return instance;
     }
 
