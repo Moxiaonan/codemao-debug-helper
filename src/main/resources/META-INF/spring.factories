@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.xy.debug.helper.DebugHelperAutoConfiguration
+com.xy.debug.helper.config.DebugHelperAutoConfiguration
