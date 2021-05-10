@@ -12,6 +12,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 开发环境bean处理器
@@ -27,7 +28,8 @@ public class IgnoreRoleAllowedBeanProcessor implements BeanPostProcessor, Enviro
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-        Boolean skipAuth = environment.getProperty(SKIP_AUTH_KEY, Boolean.class);
+        Boolean skipAuth = Optional.ofNullable(environment.getProperty(SKIP_AUTH_KEY, Boolean.class))
+                .orElse(Boolean.TRUE);
         if (Boolean.TRUE.equals(skipAuth)) {
             // 移除 @RolesAllowed 标签
             Method[] declaredMethods = bean.getClass().getDeclaredMethods();
