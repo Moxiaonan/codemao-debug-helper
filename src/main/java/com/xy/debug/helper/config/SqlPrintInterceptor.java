@@ -27,7 +27,8 @@ import java.util.StringJoiner;
  */
 @Intercepts({
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class}),
-        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
+        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})
 })
 @Component
 public class SqlPrintInterceptor implements Interceptor {
@@ -49,12 +50,15 @@ public class SqlPrintInterceptor implements Interceptor {
                 if (metaObject.hasGetter(property)) {
                     // 通过元数据获取参数
                     stringValue = getParamString(metaObject.getValue(property));
-                }else {
+                }else if (boundSql.hasAdditionalParameter(property)){
                     // 动态SQL的参数
                     stringValue = getParamString(boundSql.getAdditionalParameter(property));
+                }else {
+                    stringValue = getParamString(param);
                 }
                 sql = sql.replaceFirst("\\?",stringValue);
             }
+            sql = sql.replaceAll("\\p{Z}|\\n|\\t"," ");
             System.out.println(consoleHighlight(mappedStatement.getId() + " : \n" + sql));
         }
 
