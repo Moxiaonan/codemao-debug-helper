@@ -1,5 +1,6 @@
 package com.xy.debug.helper.config;
 
+import com.xy.debug.helper.util.CommonUtil;
 import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
@@ -16,6 +17,7 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 import java.util.StringJoiner;
 
@@ -59,10 +61,19 @@ public class SqlPrintInterceptor implements Interceptor {
                 sql = sql.replaceFirst("\\?",stringValue);
             }
             sql = sql.replaceAll("\\p{Z}|\\n|\\t"," ");
-            System.out.println(consoleHighlight(mappedStatement.getId() + " : \n" + sql));
+            System.out.println(CommonUtil.consoleHighlight(mappedStatement.getId() + " : \n" + sql));
         }
 
-        return invocation.proceed();
+        return CommonUtil.calcCost(mappedStatement.getId(),() -> {
+            try {
+                return invocation.proceed();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            return null;
+        });
     }
 
     @Override
@@ -85,24 +96,10 @@ public class SqlPrintInterceptor implements Interceptor {
         String val = "";
         StringJoiner sj = new StringJoiner("", "'", "'");
         if (param instanceof String) {
-            val = sj.add((String)param).toString();
+            val = (String) param;
         }else if (null != param){
             val = param.toString();
         }
-        return val;
-    }
-
-    /**
-     * 控制台高亮颜色显示
-     *
-     * @param content
-     * @return
-     */
-    public String consoleHighlight(String content){
-        if (null != content && content.length() > 0) {
-            StringJoiner colorJoiner = new StringJoiner("","\033[1;36m","\033[0m");
-            return colorJoiner.add(content).toString();
-        }
-        return "";
+        return sj.add(val).toString();
     }
 }
