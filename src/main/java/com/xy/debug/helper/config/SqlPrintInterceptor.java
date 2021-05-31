@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 import java.util.StringJoiner;
+import java.util.regex.Matcher;
 
 /**
  * 打印完整select SQL
@@ -36,32 +37,38 @@ import java.util.StringJoiner;
 public class SqlPrintInterceptor implements Interceptor {
 
     @Override
-    public Object intercept(Invocation invocation) throws Throwable {
-        Object[] args = invocation.getArgs();
-        MappedStatement mappedStatement = (MappedStatement) args[0];
-        Configuration configuration = mappedStatement.getConfiguration();
-        if (args.length > 1) {
-            Object param = args[1];
-            BoundSql boundSql = mappedStatement.getBoundSql(param);
-            String sql = boundSql.getSql();
-            // 获取元数据
-            MetaObject metaObject = configuration.newMetaObject(boundSql.getParameterObject());
-            for (ParameterMapping parameterMapping : boundSql.getParameterMappings()) {
-                String property = parameterMapping.getProperty();
-                String stringValue;
-                if (metaObject.hasGetter(property)) {
-                    // 通过元数据获取参数
-                    stringValue = getParamString(metaObject.getValue(property));
-                }else if (boundSql.hasAdditionalParameter(property)){
-                    // 动态SQL的参数
-                    stringValue = getParamString(boundSql.getAdditionalParameter(property));
-                }else {
-                    stringValue = getParamString(param);
+    public Object intercept(Invocation invocation) {
+        MappedStatement mappedStatement = null;
+        try {
+            Object[] args = invocation.getArgs();
+            mappedStatement = (MappedStatement) args[0];
+            Configuration configuration = mappedStatement.getConfiguration();
+            if (args.length > 1) {
+                Object param = args[1];
+                BoundSql boundSql = mappedStatement.getBoundSql(param);
+                String sql = boundSql.getSql();
+                // 获取元数据
+                MetaObject metaObject = configuration.newMetaObject(boundSql.getParameterObject());
+                for (ParameterMapping parameterMapping : boundSql.getParameterMappings()) {
+                    String property = parameterMapping.getProperty();
+                    String stringValue;
+                    if (metaObject.hasGetter(property)) {
+                        // 通过元数据获取参数
+                        stringValue = getParamString(metaObject.getValue(property));
+                    }else if (boundSql.hasAdditionalParameter(property)){
+                        // 动态SQL的参数
+                        stringValue = getParamString(boundSql.getAdditionalParameter(property));
+                    }else {
+                        stringValue = getParamString(param);
+                    }
+                    sql = sql.replaceFirst("\\?",Matcher.quoteReplacement(stringValue));
                 }
-                sql = sql.replaceFirst("\\?",stringValue);
+                sql = sql.replaceAll("\\p{Z}|\\n|\\t"," ");
+                System.out.println(CommonUtil.consoleHighlight(mappedStatement.getId() + " : \n" + sql));
             }
-            sql = sql.replaceAll("\\p{Z}|\\n|\\t"," ");
-            System.out.println(CommonUtil.consoleHighlight(mappedStatement.getId() + " : \n" + sql));
+        } catch (Exception e) {
+            System.out.println(CommonUtil.consoleHighlight("sql interceptor error"));
+            e.printStackTrace();
         }
 
         return CommonUtil.calcCost(mappedStatement.getId(),() -> {
