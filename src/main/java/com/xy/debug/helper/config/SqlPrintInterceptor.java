@@ -68,16 +68,13 @@ public class SqlPrintInterceptor implements Interceptor {
             }
         } catch (Exception e) {
             System.out.println(CommonUtil.consoleHighlight("sql interceptor error"));
-            e.printStackTrace();
         }
 
         return CommonUtil.calcCost(mappedStatement.getId(),() -> {
             try {
                 return invocation.proceed();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                System.out.println(CommonUtil.consoleHighlight("business error , please check business code"));
             }
             return null;
         });
